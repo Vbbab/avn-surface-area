@@ -1,0 +1,72 @@
+# vi: ft=plantuml
+@startuml
+
+left to right direction
+allowmixing
+skinparam linetype polyline
+skinparam linetype ortho
+
+object "DICOM File" as DICOMFile {
+    Headers
+    --
+    \n\nImage Data\n\n
+}
+
+collections "DICOM Files in Folder" as DICOMFiles
+
+
+namespace dicom {
+  object DICOMStudy {
+    This class is responsible for parsing the DICOM files
+    in the folder in the correct sequence. It will sort the
+    DICOM files by their Series and Instance Numbers, and will
+    provide interfaces to advance and seek through the set for processing.
+  }
+
+  object DICOMConstants {
+    This class will hold a variety of constants related to the DICOM standard
+    for code readability and maintainability.
+  }
+  
+  DICOMConstants -> DICOMStudy
+}
+
+namespace annotate {
+
+  object AnnotatedDICOMStudy {
+    In order for the core algorithm to function, the data needs to be annotated. This involves gathering
+    important information about each image in the study such as the length of the line of necrosis as well
+    as its position. The user interface component will be responsible for providing users with an interface where
+    they can provide this information, which will be stored within the headers of the DICOM files.
+
+    This class is a wrapper around **dicom.DICOMStudy** which guarantees that it has been
+    annotated (and the necessary annotation data is present in the headers of the DICOM files).
+  }
+
+}
+
+namespace surfacearea {
+  object SurfaceArea {
+    This class contains the core algorithm to calculate the surface area.
+    It takes an **annotate.AnnotatedDICOMStudy** and uses it to provide an estimate for the surface area of necrosis.
+  }
+}
+
+namespace demo {
+  note "This class will be responsible for a variety of important features required for creating a usable \n\
+demo of the algorithm. This will include an interface for the user to load a DICOM dataset and annotate \n\
+it." as demoNote
+}
+
+namespace pydicom {
+    note "(External Library)" as extdep
+}
+
+DICOMFile -> DICOMFiles
+DICOMFiles -> dicom
+dicom -> annotate
+annotate -> surfacearea
+
+pydicom -> dicom
+
+@enduml
