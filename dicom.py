@@ -15,7 +15,6 @@ class DICOMConstants():
     # and staying ahead of the library, in case the standard ever does change (fingers crossed, it doesn't).
     kSeriesNumber = (0x0020, 0x0011)
     kInstanceNumber = (0x0020, 0x0013)
-
     kStudyInstanceUID = (0x0020, 0x000D)
 
 class DICOMStudy():
