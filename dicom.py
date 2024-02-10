@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import os
 from typing import Callable
 from functools import cmp_to_key
+import gui
 
 
 class DICOMConstants():
