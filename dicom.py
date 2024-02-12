@@ -1,5 +1,7 @@
 from sys import stdlib_module_names
 import pydicom
+import pydicom.dataset
+import pydicom.tag
 
 # DEBUG
 import matplotlib.pyplot as plt
@@ -7,8 +9,7 @@ import matplotlib.pyplot as plt
 import os
 from typing import Callable
 from functools import cmp_to_key
-import gui
-
+import typing as typ
 
 class DICOMConstants():
     # Keyword constants from the DICOM standard translated to their (group, element) tuples.
@@ -17,6 +18,31 @@ class DICOMConstants():
     kSeriesNumber = (0x0020, 0x0011)
     kInstanceNumber = (0x0020, 0x0013)
     kStudyInstanceUID = (0x0020, 0x000D)
+
+    kSCreator = "avn-surface-area" # Creator name for private blocks as per DICOM spec
+    kBAnnotationsBlock = 0x6969 # We store our annotation data here
+    class Annotations:
+        kPoints = 0x01
+
+    kBPointBlock = 0x6971   # Each point must be represented as a Dataset per DICOM standard.
+    # This means the actual (x, y) coord needs to be stored in its own private block.
+    class Point:
+        kX = 0x01
+        kY = 0x02
+
+    # Helper utils
+    @staticmethod
+    def uid(ds: pydicom.FileDataset) -> str:
+        return f"{ds[DICOMConstants.kStudyInstanceUID]}:{ds[DICOMConstants.kSeriesNumber]}:{ds[DICOMConstants.kInstanceNumber]}"
+    
+    @staticmethod
+    def getBlock(ds: pydicom.Dataset, group: int) -> pydicom.dataset.PrivateBlock:
+        return ds.private_block(group, DICOMConstants.kSCreator)
+    
+    @staticmethod
+    def tag(pb: pydicom.dataset.PrivateBlock, offset: int) -> pydicom.tag.BaseTag:
+        return pb.get_tag(offset)
+
 
 class DICOMStudy():
     # Some defaults for callbacks
