@@ -7,7 +7,7 @@ import pydicom.tag
 import matplotlib.pyplot as plt
 
 import os
-from typing import Callable
+from typing import Callable, List
 from functools import cmp_to_key
 import typing as typ
 
@@ -18,6 +18,8 @@ class DICOMConstants():
     kSeriesNumber = (0x0020, 0x0011)
     kInstanceNumber = (0x0020, 0x0013)
     kStudyInstanceUID = (0x0020, 0x000D)
+    kSpacingBetweenSlices = (0x0018, 0x0088)
+    kPixelSpacing = (0x0028, 0x0030)    # Row spacing (vert), column spacing (horiz). c2c.
 
     kSCreator = "avn-surface-area" # Creator name for private blocks as per DICOM spec
     kBAnnotationsBlock = 0x6969 # We store our annotation data here
@@ -33,7 +35,7 @@ class DICOMConstants():
     # Helper utils
     @staticmethod
     def uid(ds: pydicom.FileDataset) -> str:
-        return f"{ds[DICOMConstants.kStudyInstanceUID]}:{ds[DICOMConstants.kSeriesNumber]}:{ds[DICOMConstants.kInstanceNumber]}"
+        return f"{ds[DICOMConstants.kStudyInstanceUID].value}:{ds[DICOMConstants.kSeriesNumber].value}:{ds[DICOMConstants.kInstanceNumber].value}"
     
     @staticmethod
     def getBlock(ds: pydicom.Dataset, group: int) -> pydicom.dataset.PrivateBlock:
@@ -42,6 +44,11 @@ class DICOMConstants():
     @staticmethod
     def tag(pb: pydicom.dataset.PrivateBlock, offset: int) -> pydicom.tag.BaseTag:
         return pb.get_tag(offset)
+
+    # Less typing
+    @staticmethod
+    def get(ds: pydicom.Dataset, tagTuple: typ.Tuple[int, int]):
+        return ds[tagTuple].value
 
 
 class DICOMStudy():
@@ -156,4 +163,14 @@ class DICOMStudy():
         self._i = self._seriesKeys.index(seriesNumber)
         self._end = False
         self._curr = self._dicomObjs[self._series[self._seriesKeys[self._i]][self._j]]
-
+    
+    """
+    Gets the sorted list of frames corresponding to a specific series
+    in the current study.
+    """
+    def get(self, seriesNumber: int) -> typ.List[pydicom.FileDataset]:
+        if not seriesNumber in self._seriesKeys: raise ValueError(f"Invalid series number ({seriesNumber})!")
+        out: typ.List[pydicom.FileDataset] = []
+        for file in self._series[seriesNumber]:
+            out.append(self._dicomObjs[file])
+        return out
