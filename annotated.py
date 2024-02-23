@@ -4,7 +4,7 @@ from dicom import DICOMConstants as DC
 from typing import List, Tuple
 
 class Annotated:
-    def __init__(self, ds: pydicom.FileDataset):
+    def __init__(self, ds: pydicom.Dataset):
         self.ds = ds
         self.points: List[Tuple[int, int]] = []
         block: pydicom.dataset.PrivateBlock

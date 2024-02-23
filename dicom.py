@@ -1,4 +1,4 @@
-from sys import stdlib_module_names
+from __future__ import annotations
 import pydicom
 import pydicom.dataset
 import pydicom.tag
@@ -34,7 +34,7 @@ class DICOMConstants():
 
     # Helper utils
     @staticmethod
-    def uid(ds: pydicom.FileDataset) -> str:
+    def uid(ds: pydicom.Dataset) -> str:
         return f"{ds[DICOMConstants.kStudyInstanceUID].value}:{ds[DICOMConstants.kSeriesNumber].value}:{ds[DICOMConstants.kInstanceNumber].value}"
     
     @staticmethod
@@ -61,7 +61,15 @@ class DICOMStudy():
     def d_onSeriesEnd(number: int, lastFrame: pydicom.FileDataset) -> None:
         pass
 
-    def __init__(self, dirPath: str, onSeriesBegin: Callable = d_onSeriesBegin, onSeriesEnd: Callable = d_onSeriesEnd) -> None:
+    def __init__(self, dirPath: str = "", onSeriesBegin: Callable = d_onSeriesBegin, onSeriesEnd: Callable = d_onSeriesEnd, skipInitializer = False,
+                 series: dict[int, list[str]] = {}, seriesKeys: list[int] = [], dicomObjs: dict[str, pydicom.Dataset] = {}) -> None:
+        if skipInitializer:
+            self._series = series
+            self._seriesKeys = seriesKeys
+            self._dicomObjs = dicomObjs
+            return # we will get monkeypatched
+        elif not len(dirPath):
+            raise Exception("Dir path empty!")
         self._i = 0 # Index of the current series we're on
         self._j = 0 # Index of the frame in the series
         self._curr = None
@@ -81,7 +89,7 @@ class DICOMStudy():
         self._seriesKeys: list[int] = []
 
         # This should make things more efficient as we don't have to re-read the files multiple times.
-        self._dicomObjs: dict[str, pydicom.FileDataset] = {}
+        self._dicomObjs: dict[str, pydicom.Dataset] = {}
 
         path = os.path.abspath(os.path.expanduser(dirPath))
 
@@ -113,11 +121,30 @@ class DICOMStudy():
         print("Done!")
 
     """
+    Load a single series from a list of Datasets.
+    Allows for test data to masquerade as DICOM files;
+    we only care that we get the headers we need.
+    Assume given list is pre-sorted.
+    """
+    @classmethod
+    def fromDatasets(cls: type[DICOMStudy], datasets: typ.List[pydicom.Dataset]) -> DICOMStudy:
+        _series: dict[int, list[str]] = {}
+        _seriesKeys: list[int] = []
+        _dicomObjs: dict[str, pydicom.Dataset] = {}
+        seriesNum = int(DICOMConstants.get(datasets[0], DICOMConstants.kSeriesNumber))
+        _seriesKeys = [seriesNum]
+        _series = {seriesNum: []}
+        for i in range(len(datasets)):
+            _series[seriesNum].append(str(i))
+            _dicomObjs[str(i)] = datasets[i]
+        return cls(skipInitializer=True, series=_series, seriesKeys=_seriesKeys, dicomObjs=_dicomObjs)
+
+    """
     Advance to (and get) the next frame, calling any appropriate callbacks as necessary.
     Calling next() at the end of the study has no effect and simply returns None.
     Use reset() to reset to the "beginning" of the study or seek() to seek to a specific series + index.
     """
-    def next(self) -> pydicom.FileDataset | None:
+    def next(self) -> pydicom.Dataset | None:
         if self._end: return
         print((self._i, self._j), len(self._series[self._seriesKeys[self._i]]), len(self._seriesKeys))
         currFrame = self._dicomObjs[self._series[self._seriesKeys[self._i]][self._j]]
@@ -140,7 +167,7 @@ class DICOMStudy():
     """
     Gets the currently pointed to frame (or None, if at the end).
     """
-    def curr(self) -> pydicom.FileDataset:
+    def curr(self) -> pydicom.Dataset:
         return self._curr # pyright: ignore
     """
     Resets the internal state to point back at the "first" frame of the entire study,
@@ -168,9 +195,9 @@ class DICOMStudy():
     Gets the sorted list of frames corresponding to a specific series
     in the current study.
     """
-    def get(self, seriesNumber: int) -> typ.List[pydicom.FileDataset]:
+    def get(self, seriesNumber: int) -> typ.List[pydicom.Dataset]:
         if not seriesNumber in self._seriesKeys: raise ValueError(f"Invalid series number ({seriesNumber})!")
-        out: typ.List[pydicom.FileDataset] = []
+        out: typ.List[pydicom.Dataset] = []
         for file in self._series[seriesNumber]:
             out.append(self._dicomObjs[file])
         return out
