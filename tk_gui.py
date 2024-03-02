@@ -40,11 +40,10 @@ image_array = study.get()
 img = ImageTk.PhotoImage(image=Image.fromarray(image_array[slider]))
 
 
-
+# i keep forgetting to pack :joy:
 label.pack()
 upload_button.pack()
 close_buton.pack()
-
 
 
 root.mainloop()
