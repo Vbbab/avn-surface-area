@@ -201,3 +201,11 @@ class DICOMStudy():
         for file in self._series[seriesNumber]:
             out.append(self._dicomObjs[file])
         return out
+    
+    """
+    NOTE: not to be confused with get(), which gets frames from a SINGLE series (yay english plurals!)
+    
+    Gets the list of series numbers in the study.
+    """
+    def getSeries(self) -> typ.List[int]:
+        return self._seriesKeys
