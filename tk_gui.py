@@ -2,6 +2,7 @@ import dicom
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
+from tkinter import filedialog as filedialog
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageTk
@@ -12,7 +13,7 @@ def close():
 
 # uploader
 def diruploader():
-    directory = tk.filedialog.askdirectory(master=root)
+    directory = filedialog.askdirectory(master=root)
     return directory
 def slider_changed(val):
     print(int(slider.get()))
@@ -21,7 +22,7 @@ def slider_changed(val):
 root = tk.Tk()
 root.geometry('1618x500')
 
-upload_button = tk.Button(root, text="click to upload dir")
+upload_button = tk.Button(root, text="upload dir")
 
 # gets directory from user
 if upload_button:
@@ -35,8 +36,7 @@ entry=tk.Entry()
 slider.pack()
 
 study = dicom.DICOMStudy(dir)
-image_array = study.get()
-img = ImageTk.PhotoImage(image=Image.fromarray(image_array[slider]))
+
 
 
 # i keep forgetting to pack :joy:
