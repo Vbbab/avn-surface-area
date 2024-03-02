@@ -5,7 +5,6 @@ from tkinter import ttk
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageTk
-import PySimpleGUI as sg
 
 # for close button
 def close():
