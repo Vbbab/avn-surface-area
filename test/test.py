@@ -64,6 +64,11 @@ with open(file, 'r') as f:
 lines = data.split('\n')
 N, P = [int(i) for i in lines[0].split(' ')]
 idx = 0 # Allow for comments
+totalValidLines = 0
+# Count non-comment lines first. TODO: could this be made better?
+for i in range(1, len(lines)):
+    if not lines[i].startswith('#') and len(lines[i]): totalValidLines += 1
+
 for i in range(1, len(lines)):
     if lines[i].startswith('#') or not len(lines[i]): continue
     vals = lines[i].split(' ')
@@ -75,7 +80,7 @@ for i in range(1, len(lines)):
     sr = float(vals[2 * P])
     sc = float(vals[2 * P + 1])
     dz = 1 # Some random valid value
-    if i < N:
+    if idx < totalValidLines - 1:
         dz = float(vals[2 * P + 2])
     
     frames.append(makeDicom(idx, points, sr, sc, dz))
