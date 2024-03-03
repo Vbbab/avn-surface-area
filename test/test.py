@@ -74,7 +74,6 @@ for i in range(1, len(lines)):
     vals = lines[i].split(' ')
     points: typ.List[typ.Tuple[int, int]] = []
     for j in range(0, 2 * P, 2):
-        print(i, j)
         points.append((int(vals[j]), int(vals[j + 1])))
     
     sr = float(vals[2 * P])
