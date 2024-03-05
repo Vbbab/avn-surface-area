@@ -146,7 +146,6 @@ class DICOMStudy():
     """
     def next(self) -> pydicom.Dataset | None:
         if self._end: return
-        print((self._i, self._j), len(self._series[self._seriesKeys[self._i]]), len(self._seriesKeys))
         currFrame = self._dicomObjs[self._series[self._seriesKeys[self._i]][self._j]]
         
         if self._j == 0: 
