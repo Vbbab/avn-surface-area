@@ -38,8 +38,8 @@ class DICOMConstants():
         return f"{ds[DICOMConstants.kStudyInstanceUID].value}:{ds[DICOMConstants.kSeriesNumber].value}:{ds[DICOMConstants.kInstanceNumber].value}"
     
     @staticmethod
-    def getBlock(ds: pydicom.Dataset, group: int) -> pydicom.dataset.PrivateBlock:
-        return ds.private_block(group, DICOMConstants.kSCreator)
+    def getBlock(ds: pydicom.Dataset, group: int, create=False) -> pydicom.dataset.PrivateBlock:
+        return ds.private_block(group, DICOMConstants.kSCreator, create=create)
     
     @staticmethod
     def tag(pb: pydicom.dataset.PrivateBlock, offset: int) -> pydicom.tag.BaseTag:
@@ -49,6 +49,22 @@ class DICOMConstants():
     @staticmethod
     def get(ds: pydicom.Dataset, tagTuple: typ.Tuple[int, int]):
         return ds[tagTuple].value
+
+    """
+    Adds a list of points [(x, y), (x, y), ...] to a Dataset.
+    """
+    @staticmethod
+    def addPoints(ds: pydicom.Dataset, pts: typ.List[typ.Tuple[int, int]]):
+        annotationsBlock = DICOMConstants.getBlock(ds, DICOMConstants.kBAnnotationsBlock, True)
+        pointDatasets = []
+        for pt in pts:
+            pointDS = pydicom.Dataset()
+            pointBlock = DICOMConstants.getBlock(pointDS, DICOMConstants.kBPointBlock, True)
+            pointBlock.add_new(DICOMConstants.Point.kX, 'DS', pt[0])
+            pointBlock.add_new(DICOMConstants.Point.kY, 'DS', pt[1])
+            pointDatasets.append(pointDS)
+        annotationsBlock.add_new(DICOMConstants.Annotations.kPoints, 'SQ', pointDatasets)
+
 
 
 class DICOMStudy():
