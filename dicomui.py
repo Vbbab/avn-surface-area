@@ -2,9 +2,12 @@ import tkinter as tk
 import numpy as np
 from tkinter import *
 from tkinter import filedialog as fd
-from PIL import ImageTk, Image 
+from PIL import ImageTk, Image
+import time 
 
+from annotated import Annotated
 import dicom
+import surface_area
 
 # Test imports start
 import PIL.Image
@@ -27,16 +30,18 @@ class DICOMImgViewer(Frame):
         self.dicom_study = dicom.DICOMStudy(self.study_dir)
         self.study_series = np.array(self.dicom_study.getSeries())
         self.dicom_slice_obj = self.dicom_study.get(self.study_series[0])
-        self.dicom_array_length = len(self.dicom_slice_obj)
         self.slice_cv_array = (self.dicom_slice_obj[self.current_slice]).pixel_array
+        self.dicom_array_length = len(self.dicom_slice_obj)
         self.image = ImageTk.PhotoImage(image=Image.fromarray(self.slice_cv_array).resize((IMAGE_WIDTH, IMAGE_HEIGHT)))
         self.point_array = []
+        self.SAButton = None
+        self.anpts = []
         
 
         # Setup the UI
         Frame.__init__(self, master)
 
-        self.uiFrame = Frame(self)
+        self.uiFrame = Frame(self, width=1280, height=720)
 
         # Button to open an image file
         # Button(self.uiFrame, text="Open an Image File", command=self.open_image_file).pack(side=LEFT)
@@ -46,18 +51,24 @@ class DICOMImgViewer(Frame):
         #Button(self.uiFrame, text="Next Slice", command=self.load_next).pack(side=LEFT)
         Button(self.uiFrame, text = "delete all annotations", command = self.delete_all).pack(side=LEFT)
         Button(self.uiFrame, text="Close Window", command=self.close_window).pack(side=LEFT)
-        Button(self.uiFrame, text="save annotations",command=self.save).pack(side=LEFT)
+        
         # Label to hold the image
         self.image_holder = Label(self, width=IMAGE_HOLDER_WIDTH, height=IMAGE_HOLDER_HEIGHT)
         self.image_holder.pack()
+        self.surface_area = 0.0 
 
         self.canvas = Canvas(master=self.image_holder, width=IMAGE_HOLDER_WIDTH, height=IMAGE_HOLDER_HEIGHT, bg="cyan")
+        self.s_area_button = Button(master=self.uiFrame, text="calc surface area", command=self.surf_area_disp)
+        print(self.surface_area)
+        
         self.id_canvas_mouse_left_bind = self.canvas.bind("<Button-1>", self.on_mouse_left_click)
         self.id_canvas_mouse_right_bind = self.canvas.bind("<Button-3>", self.on_mouse_right_click)
         self.id_canvas_keyboard_back_bind = master.bind('q', self.load_previous)
-        self.id_canvas_keyboard_back_bind = master.bind('w', self.load_next)
+        self.id_canvas_keyboard_forward_bind = master.bind('w', self.load_next)
+        self.save_keyboard_bind = master.bind('e', self.save)
         self.canvas.pack(side=LEFT)
-
+        
+        self.s_area_button.pack()
         self.uiFrame.pack(side=TOP, fill=BOTH)
         self.pack()
 
@@ -67,10 +78,10 @@ class DICOMImgViewer(Frame):
         self.reset_annotation_markers()
 
     def reset_annotation_markers(self):
-        self.line_start_x = 0
-        self.line_start_y = 0
-        self.line_end_x = 0
-        self.line_end_y = 0
+        self.line_start_x = tk.IntVar()
+        self.line_start_y = tk.IntVar()
+        self.line_end_x = tk.IntVar()
+        self.line_end_y = tk.IntVar()
         
     def open_image_file(self):
         filename = fd.askopenfilename()
@@ -86,6 +97,13 @@ class DICOMImgViewer(Frame):
         self.slice_cv_array = (self.dicom_slice_obj[self.current_slice]).pixel_array
         self.image = ImageTk.PhotoImage(image=Image.fromarray(self.slice_cv_array).resize((IMAGE_WIDTH, IMAGE_HEIGHT)))
         self.show_image()
+        try:
+            self.anpts = Annotated(self.dicom_slice_obj[self.current_slice]).getPoints()
+            self.show_annotations()
+            print(str(self.current_slice) + " annotated")
+            # print(self.anpts)
+        except ValueError:
+            print(str(self.current_slice) + " not annotated")
 
     def load_next(self, _useless):
         self.current_slice = self.current_slice + 1;
@@ -94,6 +112,12 @@ class DICOMImgViewer(Frame):
         self.slice_cv_array = (self.dicom_slice_obj[self.current_slice]).pixel_array
         self.image = ImageTk.PhotoImage(image=Image.fromarray(self.slice_cv_array).resize((IMAGE_WIDTH, IMAGE_HEIGHT)))
         self.show_image()
+        try:
+            self.anpts = Annotated(self.dicom_slice_obj[self.current_slice]).getPoints()
+            self.show_annotations()
+            print(str(self.current_slice) + " annotated")
+        except ValueError as VE:
+            print(str(self.current_slice) + " not annotated")  
 
     def show_image(self):        
         # self.image_holder.config(image=self.image, bg="#000000")
@@ -119,15 +143,18 @@ class DICOMImgViewer(Frame):
         self.line_start_y = event.y
         self.next_tuple = (event.x, event.y)
         self.point_array.append(self.next_tuple)
-        print(self.point_array)
         self.canvas.pack()
         #self.reset_annotation_markers()
     
-    def save(self):
-        dicom.DICOMConstants.addPoints(self.dicom_slice_obj, self.point_array)
+    def save(self, _useless):
+        dicom.DICOMConstants.addPoints(self.dicom_slice_obj[self.current_slice], self.point_array)
+        print("saved!")
 
     def delete_all(self):
         self.canvas.delete('my_line')
+        print("deleted all annotations!")
+        self.point_array = []
+        dicom.DICOMConstants.addPoints(self.dicom_slice_obj[self.current_slice], self.point_array)
 
     def close_window(self):
         self.master.destroy()
@@ -136,6 +163,23 @@ class DICOMImgViewer(Frame):
     # Debug functions
     def print_annotation_markers(self):
         print(self.line_start_x, self.line_start_y, self.line_end_x, self.line_end_y)
+
+    def show_annotations(self):
+        for i in range(len(self.anpts)-1):
+            self.canvas.create_line(self.anpts[i][0], self.anpts[i][1], self.anpts[i+1][0], self.anpts[i+1][1], fill="blue", tag='my_line')
+
+    def surf_area_disp(self):
+        try:
+            self.surf_area_obj = surface_area.SurfaceArea(self.dicom_study, self.study_series[0])
+            self.surface_area = self.surf_area_obj.getArea()
+            if self.SAButton == None:
+                self.SAButton = Button(master=self.uiFrame, text="Surface area: " + str(self.surface_area))
+                self.SAButton.pack(side=LEFT)
+            print(self.surface_area)
+            
+
+        except ValueError:
+            print("sth not annotated!")
 
 if __name__ == "__main__":
     root_window = tk.Tk()
