@@ -1,9 +1,11 @@
-import tkinter as tk
+import ttkbootstrap as ttk
 import numpy as np
 from tkinter import *
 from tkinter import filedialog as fd
 from PIL import ImageTk, Image
-import time 
+import time
+
+from ttkbootstrap.window import tkinter 
 
 from annotated import Annotated
 import dicom
@@ -23,7 +25,7 @@ IMAGE_HOLDER_HEIGHT = 400
 class DICOMImgViewer(Frame):
     def __init__(self, master):
         self.study_dir = fd.askdirectory(master=master)
-        print("study_dir:", self.study_dir)
+        print("study_dir: ", self.study_dir)
 
         # Initialize DICOMStudy
         self.current_slice = 0
@@ -57,8 +59,8 @@ class DICOMImgViewer(Frame):
         self.image_holder.pack()
         self.surface_area = 0.0 
 
-        self.canvas = Canvas(master=self.image_holder, width=IMAGE_HOLDER_WIDTH, height=IMAGE_HOLDER_HEIGHT, bg="cyan")
-        self.s_area_button = Button(master=self.uiFrame, text="calc surface area", command=self.surf_area_disp)
+        self.canvas = Canvas(master=self.image_holder, width=IMAGE_HOLDER_WIDTH, height=IMAGE_HOLDER_HEIGHT, bg="black")
+        self.s_area_button = Button(master=self.uiFrame, text="surface area (only after all annotated)", command=self.surf_area_disp)
         print(self.surface_area)
         
         self.id_canvas_mouse_left_bind = self.canvas.bind("<Button-1>", self.on_mouse_left_click)
@@ -66,6 +68,7 @@ class DICOMImgViewer(Frame):
         self.id_canvas_keyboard_back_bind = master.bind('q', self.load_previous)
         self.id_canvas_keyboard_forward_bind = master.bind('w', self.load_next)
         self.save_keyboard_bind = master.bind('e', self.save)
+        self.undo_keyboard_bind = master.bind('u', self.undo)
         self.canvas.pack(side=LEFT)
         
         self.s_area_button.pack()
@@ -78,10 +81,10 @@ class DICOMImgViewer(Frame):
         self.reset_annotation_markers()
 
     def reset_annotation_markers(self):
-        self.line_start_x = tk.IntVar()
-        self.line_start_y = tk.IntVar()
-        self.line_end_x = tk.IntVar()
-        self.line_end_y = tk.IntVar()
+        self.line_start_x = ttk.IntVar()
+        self.line_start_y = ttk.IntVar()
+        self.line_end_x = ttk.IntVar()
+        self.line_end_y = ttk.IntVar()
         
     def open_image_file(self):
         filename = fd.askopenfilename()
@@ -104,6 +107,8 @@ class DICOMImgViewer(Frame):
             # print(self.anpts)
         except ValueError:
             print(str(self.current_slice) + " not annotated")
+        
+        self.reset_annotation_markers()
 
     def load_next(self, _useless):
         self.current_slice = self.current_slice + 1;
@@ -116,8 +121,11 @@ class DICOMImgViewer(Frame):
             self.anpts = Annotated(self.dicom_slice_obj[self.current_slice]).getPoints()
             self.show_annotations()
             print(str(self.current_slice) + " annotated")
-        except ValueError as VE:
-            print(str(self.current_slice) + " not annotated")  
+        except ValueError:
+            print(str(self.current_slice) + " not annotated") 
+        
+        self.reset_annotation_markers()
+        
 
     def show_image(self):        
         # self.image_holder.config(image=self.image, bg="#000000")
@@ -130,7 +138,7 @@ class DICOMImgViewer(Frame):
         self.point_array = []
         self.line_start_x = event.x
         self.line_start_y = event.y
-        self.start_tuple = (event.x, event.y)
+        self.start_tuple = (self.line_start_x, self.line_start_y)
         self.point_array.append(self.start_tuple)
 
     def on_mouse_right_click(self, event):
@@ -146,6 +154,14 @@ class DICOMImgViewer(Frame):
         self.canvas.pack()
         #self.reset_annotation_markers()
     
+    def undo(self, _useless):
+        self.point_array.remove(self.point_array[(len(self.point_array))-1])
+        self.canvas.delete('my_line')
+        for i in range(len(self.point_array)-1):
+            self.canvas.create_line(self.point_array[i][0], self.point_array[i][1], self.point_array[i+1][0], self.point_array[i+1][1], fill="red", tag='my_line')
+        self.line_start_x = self.point_array[len(self.point_array)-1][0] 
+        self.line_start_y = self.point_array[len(self.point_array)-1][1] 
+    
     def save(self, _useless):
         dicom.DICOMConstants.addPoints(self.dicom_slice_obj[self.current_slice], self.point_array)
         print("saved!")
@@ -155,6 +171,7 @@ class DICOMImgViewer(Frame):
         print("deleted all annotations!")
         self.point_array = []
         dicom.DICOMConstants.addPoints(self.dicom_slice_obj[self.current_slice], self.point_array)
+        
 
     def close_window(self):
         self.master.destroy()
@@ -173,16 +190,16 @@ class DICOMImgViewer(Frame):
             self.surf_area_obj = surface_area.SurfaceArea(self.dicom_study, self.study_series[0])
             self.surface_area = self.surf_area_obj.getArea()
             if self.SAButton == None:
-                self.SAButton = Button(master=self.uiFrame, text="Surface area: " + str(self.surface_area))
-                self.SAButton.pack(side=LEFT)
-            print(self.surface_area)
+                self.SAButton = Button(master=self.uiFrame, text="Surface area in mm²: " + str(self.surface_area))
+                self.SAButton.pack(side=LEFT, expand=TRUE)
+                print(self.surface_area)
             
 
         except ValueError:
             print("sth not annotated!")
 
 if __name__ == "__main__":
-    root_window = tk.Tk()
+    root_window = ttk.Window(themename='pulse')
     root_window.geometry('1280x720')
     dicom_viewer = DICOMImgViewer(master=root_window)
     root_window.mainloop()
