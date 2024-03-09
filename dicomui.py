@@ -33,8 +33,7 @@ class DICOMImgViewer(Frame):
         self.study_series = np.array(self.dicom_study.getSeries())
         self.dicom_slice_obj = self.dicom_study.get(self.study_series[0])
         self.slice_cv_array = (self.dicom_slice_obj[self.current_slice]).pixel_array.copy()
-        self.slice_cv_array = self.slice_cv_array / np.max(self.slice_cv_array)
-        self.slice_cv_array = (self.slice_cv_array*255).astype(np.uint8)
+        self.array_preprocessing()
         self.dicom_array_length = len(self.dicom_slice_obj)
         self.image = ImageTk.PhotoImage(image=Image.fromarray(self.slice_cv_array).resize((IMAGE_WIDTH, IMAGE_HEIGHT)))
         self.point_array = []
@@ -82,6 +81,13 @@ class DICOMImgViewer(Frame):
 
         # Initialize annotation marker variables
         self.reset_annotation_markers()
+    
+    def array_preprocessing(self):
+        self.slice_cv_array = self.slice_cv_array / np.max(self.slice_cv_array)
+        self.slice_cv_array = (self.slice_cv_array*255).astype(np.uint8)
+
+
+
 
     def reset_annotation_markers(self):
         self.line_start_x = ttk.IntVar()
@@ -100,7 +106,8 @@ class DICOMImgViewer(Frame):
         self.current_slice = self.current_slice - 1;
         if self.current_slice < 0:
             self.current_slice = (self.dicom_array_length-1)
-        self.slice_cv_array = (self.dicom_slice_obj[self.current_slice]).pixel_array
+        self.slice_cv_array = (self.dicom_slice_obj[self.current_slice]).pixel_array.copy()
+        self.array_preprocessing()
         self.image = ImageTk.PhotoImage(image=Image.fromarray(self.slice_cv_array).resize((IMAGE_WIDTH, IMAGE_HEIGHT)))
         self.show_image()
         try:
@@ -117,7 +124,8 @@ class DICOMImgViewer(Frame):
         self.current_slice = self.current_slice + 1;
         if self.current_slice > (self.dicom_array_length-1):
             self.current_slice = 0
-        self.slice_cv_array = (self.dicom_slice_obj[self.current_slice]).pixel_array
+        self.slice_cv_array = (self.dicom_slice_obj[self.current_slice]).pixel_array.copy()
+        self.array_preprocessing()
         self.image = ImageTk.PhotoImage(image=Image.fromarray(self.slice_cv_array).resize((IMAGE_WIDTH, IMAGE_HEIGHT)))
         self.show_image()
         try:
