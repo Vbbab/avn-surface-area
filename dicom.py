@@ -65,6 +65,56 @@ class DICOMConstants():
             pointDatasets.append(pointDS)
         annotationsBlock.add_new(DICOMConstants.Annotations.kPoints, 'SQ', pointDatasets)
 
+    """
+    Remove ALL annotations from a Dataset.
+    (Why am I yapping in this docstring anyway? Read the function name!!!)
+    """
+    @staticmethod
+    def clearAnnotations(ds: pydicom.Dataset):
+        # Harder because no specific way to "selectively" clear private blocks.
+
+        # First, work on Annotations
+        try:
+            pb = DICOMConstants.getBlock(ds, DICOMConstants.kBAnnotationsBlock)
+            # Delete all stuff we made:
+            del ds[DICOMConstants.tag(pb, DICOMConstants.Annotations.kPoints)]
+            # Then search for our creator and delete it.
+            for i in range(0xf + 1):
+                try:
+                    if ds[(DICOMConstants.kBAnnotationsBlock, 0x0010 + i)].value == DICOMConstants.kSCreator:
+                        del ds[(DICOMConstants.kBAnnotationsBlock, 0x0010 + i)]
+                        break
+                except:
+                    continue
+        except KeyError:
+            pass
+        
+        # Next, work on Points, if they exist 
+        try:
+            pb = DICOMConstants.getBlock(ds, DICOMConstants.kBPointBlock)
+            # Delete all stuff we made:
+            del ds[DICOMConstants.tag(pb, DICOMConstants.Point.kX)]
+            del ds[DICOMConstants.tag(pb, DICOMConstants.Point.kY)]
+            # Then search for our creator and delete it.
+            for i in range(0xf + 1):
+                try:
+                    if ds[(DICOMConstants.kBPointBlock, 0x0010 + i)].value == DICOMConstants.kSCreator:
+                        del ds[(DICOMConstants.kBPointBlock, 0x0010 + i)]
+                        break
+                except:
+                    continue
+        except KeyError:
+            pass
+
+    """
+    Save a list of Datasets to a folder.
+    """
+    @staticmethod
+    def save(datasets: typ.List[pydicom.Dataset], folderPath: str):
+        os.mkdir(folderPath)
+        for i in range(len(datasets)):
+            datasets[i].save_as(f"{folderPath}/{i}")
+
 
 
 class DICOMStudy():
