@@ -199,7 +199,7 @@ class DICOMImgViewer(Frame):
 
     def show_annotations(self):
         for i in range(len(self.anpts)-1):
-            self.canvas.create_line(self.anpts[i][0], self.anpts[i][1], self.anpts[i+1][0], self.anpts[i+1][1], fill="blue", tag='my_line')
+            self.canvas.create_line(self.anpts[i][0], self.anpts[i][1], self.anpts[i+1][0], self.anpts[i+1][1], fill="yellow", tag='my_line')
 
     def surf_area_disp(self):
         try:

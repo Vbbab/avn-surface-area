@@ -88,7 +88,7 @@ class DICOMConstants():
                     continue
         except KeyError:
             pass
-        
+
         # Next, work on Points, if they exist 
         try:
             pb = DICOMConstants.getBlock(ds, DICOMConstants.kBPointBlock)
