@@ -32,11 +32,14 @@ class DICOMImgViewer(Frame):
         self.dicom_study = dicom.DICOMStudy(self.study_dir)
         self.study_series = np.array(self.dicom_study.getSeries())
         self.dicom_slice_obj = self.dicom_study.get(self.study_series[0])
-        self.slice_cv_array = (self.dicom_slice_obj[self.current_slice]).pixel_array
+        self.slice_cv_array = (self.dicom_slice_obj[self.current_slice]).pixel_array.copy()
+        self.slice_cv_array = self.slice_cv_array / np.max(self.slice_cv_array)
+        self.slice_cv_array = (self.slice_cv_array*255).astype(np.uint8)
         self.dicom_array_length = len(self.dicom_slice_obj)
         self.image = ImageTk.PhotoImage(image=Image.fromarray(self.slice_cv_array).resize((IMAGE_WIDTH, IMAGE_HEIGHT)))
         self.point_array = []
         self.SAButton = None
+
         self.anpts = []
         
 
