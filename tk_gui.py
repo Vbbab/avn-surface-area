@@ -1,3 +1,5 @@
+#dicomui.py is the actual ui now
+
 import dicom 
 import tkinter as tk
 from tkinter import *
