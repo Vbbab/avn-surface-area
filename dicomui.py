@@ -53,8 +53,9 @@ class DICOMImgViewer(Frame):
         # Button to close the window
         #Button(self.uiFrame, text="Previous Slice", command=self.load_previous).pack(side=LEFT)
         #Button(self.uiFrame, text="Next Slice", command=self.load_next).pack(side=LEFT)
-        Button(self.uiFrame, text = "delete all annotations", command = self.delete_all).pack(side=LEFT)
+        Button(self.uiFrame, text = "Delete All Annotations", command = self.delete_all).pack(side=LEFT)
         Button(self.uiFrame, text="Close Window", command=self.close_window).pack(side=LEFT)
+        Button(self.uiFrame, text="Save to Disk", command=self.save_to_disk).pack(side=LEFT)
         
         # Label to hold the image
         self.image_holder = Label(self, width=IMAGE_HOLDER_WIDTH, height=IMAGE_HOLDER_HEIGHT)
@@ -78,16 +79,32 @@ class DICOMImgViewer(Frame):
         self.pack()
 
         self.show_image()
+        self.load_annotations()
 
         # Initialize annotation marker variables
         self.reset_annotation_markers()
     
+    def load_annotations(self):
+        try:
+            self.anpts = Annotated(self.dicom_slice_obj[self.current_slice]).getPoints()
+            self.show_annotations()
+            print(str(self.current_slice) + " annotated")
+            # print(self.anpts)
+        except ValueError:
+            print(str(self.current_slice) + " not annotated")
+        
+        self.reset_annotation_markers()
     def array_preprocessing(self):
         self.slice_cv_array = self.slice_cv_array / np.max(self.slice_cv_array)
         self.slice_cv_array = (self.slice_cv_array*255).astype(np.uint8)
 
 
-
+    def save_to_disk(self):
+        try:
+            dicom.DICOMConstants.save(self.dicom_slice_obj, './annotated_dicom_files')
+            print("saved!")
+        except FileExistsError:
+            print("folder already exists!")
 
     def reset_annotation_markers(self):
         self.line_start_x = ttk.IntVar()
@@ -110,15 +127,7 @@ class DICOMImgViewer(Frame):
         self.array_preprocessing()
         self.image = ImageTk.PhotoImage(image=Image.fromarray(self.slice_cv_array).resize((IMAGE_WIDTH, IMAGE_HEIGHT)))
         self.show_image()
-        try:
-            self.anpts = Annotated(self.dicom_slice_obj[self.current_slice]).getPoints()
-            self.show_annotations()
-            print(str(self.current_slice) + " annotated")
-            # print(self.anpts)
-        except ValueError:
-            print(str(self.current_slice) + " not annotated")
-        
-        self.reset_annotation_markers()
+        self.load_annotations() 
 
     def load_next(self, _useless):
         self.current_slice = self.current_slice + 1;
@@ -128,14 +137,7 @@ class DICOMImgViewer(Frame):
         self.array_preprocessing()
         self.image = ImageTk.PhotoImage(image=Image.fromarray(self.slice_cv_array).resize((IMAGE_WIDTH, IMAGE_HEIGHT)))
         self.show_image()
-        try:
-            self.anpts = Annotated(self.dicom_slice_obj[self.current_slice]).getPoints()
-            self.show_annotations()
-            print(str(self.current_slice) + " annotated")
-        except ValueError:
-            print(str(self.current_slice) + " not annotated") 
-        
-        self.reset_annotation_markers()
+        self.load_annotations()
         
 
     def show_image(self):        
@@ -179,9 +181,9 @@ class DICOMImgViewer(Frame):
 
     def delete_all(self):
         self.canvas.delete('my_line')
+        dicom.DICOMConstants.clearAnnotations(self.dicom_slice_obj[self.current_slice])
         print("deleted all annotations!")
-        self.point_array = []
-        dicom.DICOMConstants.addPoints(self.dicom_slice_obj[self.current_slice], self.point_array)
+        
         
 
     def close_window(self):
