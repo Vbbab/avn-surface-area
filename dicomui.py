@@ -3,7 +3,7 @@ import numpy as np
 from tkinter import *
 from tkinter import filedialog as fd
 from PIL import ImageTk, Image
-import time
+import shutil 
 
 from ttkbootstrap.window import tkinter 
 
@@ -56,6 +56,7 @@ class DICOMImgViewer(Frame):
         Button(self.uiFrame, text = "Delete All Annotations", command = self.delete_all).pack(side=LEFT)
         Button(self.uiFrame, text="Close Window", command=self.close_window).pack(side=LEFT)
         Button(self.uiFrame, text="Save to Disk", command=self.save_to_disk).pack(side=LEFT)
+        Button(self.uiFrame, text="Remove Annotated Files", command=self.delete_anfiles).pack(side=LEFT)
         
         # Label to hold the image
         self.image_holder = Label(self, width=IMAGE_HOLDER_WIDTH, height=IMAGE_HOLDER_HEIGHT)
@@ -97,7 +98,9 @@ class DICOMImgViewer(Frame):
     def array_preprocessing(self):
         self.slice_cv_array = self.slice_cv_array / np.max(self.slice_cv_array)
         self.slice_cv_array = (self.slice_cv_array*255).astype(np.uint8)
-
+    
+    def delete_anfiles(self):
+        shutil.rmtree("./annotated_dicom_files")
 
     def save_to_disk(self):
         try:
