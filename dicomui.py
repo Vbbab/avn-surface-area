@@ -206,7 +206,7 @@ class DICOMImgViewer(Frame):
             self.surf_area_obj = surface_area.SurfaceArea(self.dicom_study, self.study_series[0])
             self.surface_area = self.surf_area_obj.getArea()
             if self.SAButton == None:
-                self.SAButton = Button(master=self.uiFrame, text="Surface area in mm²: " + str(self.surface_area))
+                self.SAButton = Button(master=self.uiFrame, text="Surface area in cm²: " + str((self.surface_area)/100))
                 self.SAButton.pack(side=LEFT, expand=TRUE)
                 print(self.surface_area)
             
