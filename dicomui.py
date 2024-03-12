@@ -45,7 +45,7 @@ class DICOMImgViewer(Frame):
         # Setup the UI
         Frame.__init__(self, master)
 
-        self.uiFrame = Frame(self, width=1280, height=720)
+        self.uiFrame = Frame(self, width=600, height=600)
 
         # Button to open an image file
         # Button(self.uiFrame, text="Open an Image File", command=self.open_image_file).pack(side=LEFT)
@@ -64,7 +64,7 @@ class DICOMImgViewer(Frame):
         self.surface_area = 0.0 
 
         self.canvas = Canvas(master=self.image_holder, width=IMAGE_HOLDER_WIDTH, height=IMAGE_HOLDER_HEIGHT, bg="black")
-        self.s_area_button = Button(master=self.uiFrame, text="surface area (only after all annotated)", command=self.surf_area_disp)
+        self.s_area_button = Button(master=self.uiFrame, text="Get Surface Area", command=self.surf_area_disp)
         print(self.surface_area)
         
         self.id_canvas_mouse_left_bind = self.canvas.bind("<Button-1>", self.on_mouse_left_click)
@@ -73,7 +73,7 @@ class DICOMImgViewer(Frame):
         self.id_canvas_keyboard_forward_bind = master.bind('w', self.load_next)
         self.save_keyboard_bind = master.bind('e', self.save)
         self.undo_keyboard_bind = master.bind('u', self.undo)
-        self.canvas.pack(side=LEFT)
+        self.canvas.pack()
         
         self.s_area_button.pack()
         self.uiFrame.pack(side=TOP, fill=BOTH)
@@ -95,6 +95,7 @@ class DICOMImgViewer(Frame):
             print(str(self.current_slice) + " not annotated")
         
         self.reset_annotation_markers()
+
     def array_preprocessing(self):
         self.slice_cv_array = self.slice_cv_array / np.max(self.slice_cv_array)
         self.slice_cv_array = (self.slice_cv_array*255).astype(np.uint8)
@@ -187,8 +188,6 @@ class DICOMImgViewer(Frame):
         dicom.DICOMConstants.clearAnnotations(self.dicom_slice_obj[self.current_slice])
         print("deleted all annotations!")
         
-        
-
     def close_window(self):
         self.master.destroy()
         self.point_array = []
@@ -199,15 +198,15 @@ class DICOMImgViewer(Frame):
 
     def show_annotations(self):
         for i in range(len(self.anpts)-1):
-            self.canvas.create_line(self.anpts[i][0], self.anpts[i][1], self.anpts[i+1][0], self.anpts[i+1][1], fill="yellow", tag='my_line')
+            self.canvas.create_line(self.anpts[i][0], self.anpts[i][1], self.anpts[i+1][0], self.anpts[i+1][1], fill="#66ff00", tag='my_line')
 
     def surf_area_disp(self):
         try:
             self.surf_area_obj = surface_area.SurfaceArea(self.dicom_study, self.study_series[0])
             self.surface_area = self.surf_area_obj.getArea()
             if self.SAButton == None:
-                self.SAButton = Button(master=self.uiFrame, text="Surface area in cm²: " + str((self.surface_area)/100))
-                self.SAButton.pack(side=LEFT, expand=TRUE)
+                self.SAButton = Button(master=self.uiFrame, text="Surface area in cm²: " + str((round(((self.surface_area)/100), 3))))
+                self.SAButton.pack(side=LEFT)
                 print(self.surface_area)
             
 
@@ -216,6 +215,6 @@ class DICOMImgViewer(Frame):
 
 if __name__ == "__main__":
     root_window = ttk.Window(themename='pulse')
-    root_window.geometry('1280x720')
+    root_window.geometry('900x470')
     dicom_viewer = DICOMImgViewer(master=root_window)
     root_window.mainloop()
