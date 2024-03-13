@@ -213,6 +213,8 @@ class DICOMImgViewer(Frame):
         except ValueError:
             print("sth not annotated!")
 
+
+# main tk window
 if __name__ == "__main__":
     root_window = ttk.Window(themename='pulse')
     root_window.geometry('900x470')
